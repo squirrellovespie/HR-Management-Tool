@@ -26,13 +26,20 @@ public class AuthController {
     public String loginPage() {
         return "login";
     }
+    
+    @GetMapping("/reset-password")
+    public String resetPasswordPage() {
+        return "reset-password";
+    }
 
     @PostMapping("/login")
     @ResponseBody
     public ResponseEntity<String> login(@RequestParam String email, @RequestParam String password) {
         if (userRepository.existsByEmail(email)) {
             User user = userRepository.findByEmail(email);
-            if (passwordMatches(password, user.getPassword())) {
+            if (user.isTemporary() && passwordMatches(password, user.getPassword())) {
+                return ResponseEntity.ok("reset");
+            } else if (passwordMatches(password, user.getPassword())) {
                 return ResponseEntity.ok("success");
             }
         }
@@ -54,6 +61,7 @@ public class AuthController {
             // Generate and save temporary password
             String temporaryPassword = generateTemporaryPassword();
             user.setPassword(temporaryPassword);
+            user.setTemporary(true);
             userRepository.save(user);
 
             // Send temporary password via email (implement email sending logic here)
@@ -62,6 +70,29 @@ public class AuthController {
             return ResponseEntity.ok("Temporary password sent to your email");
         } else {
             return ResponseEntity.badRequest().body("Email not found");
+        }
+    }
+    
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @RequestParam String email,
+            @RequestParam String temporaryPassword,
+            @RequestParam String newPassword,
+            @RequestParam String confirmPassword) {
+        // Check if newPassword matches confirmPassword
+        if (newPassword.equals(confirmPassword)) {
+            User user = userRepository.findByEmail(email);
+            if (user != null && user.isTemporary() && user.getPassword().equals(temporaryPassword)) {
+                // Reset the user's password and set temporary to false
+                user.setPassword(newPassword);
+                user.setTemporary(false);
+                userRepository.save(user);
+                return ResponseEntity.ok("success");
+            } else {
+            	return ResponseEntity.ok("invalid");
+            }
+        } else {
+        	return ResponseEntity.ok("nomatch");
         }
     }
     

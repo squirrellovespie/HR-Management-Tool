@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
+        
 
         try {
             const response = await fetch('/auth/login', {
@@ -17,12 +18,15 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             const data = await response.text();
-            console.log(data); // Debugging: Check the actual response received
 
             if (data.trim() === 'success') {
                 alert('Successful login!');
             } else if (data.trim() === 'error') {
                 alert('Invalid credentials');
+            } else if (data.trim() === 'reset') {
+                alert('You need to reset your password.');
+                // Redirect to the password reset page
+                window.location.href = '/auth/reset-password'; // Replace with your reset password URL
             } else {
                 alert('Unknown response from server');
             }
